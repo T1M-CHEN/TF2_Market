@@ -1,11 +1,28 @@
-# 基于深度学习的货架场景检测/分类的AI pipeline
+# 基于深度学习的超市货架场景检测&分类的AI Pipeline
 
-retinanets：tensorflow==2.4.0
+----
+
+
+
+## requirements
+
+tensorflow==2.4.0
+
+Keras==2.4.3
+
+opencv-python
+
+dill
+
+pillow
+
 
 
 ## Introduction：
 
-基于AI新零售的大发展趋势下，货架管理问题进行解决，可以看作是提高利润的短期目标。同时选用TensorFlow系列快速上手和易于使用的特性，还关注到很多企业大型项目都使用TF进行部署。
+基于AI新零售的大发展趋势下，货架管理问题进行解决，可以看作是提高利润的短期目标。同时选用TensorFlow系列快速上手和易于使用的特性，很多企业的大型项目都使用TF进行部署。
+
+
 
 
 ## Task
@@ -13,55 +30,61 @@ retinanets：tensorflow==2.4.0
 对真实场景的商品进行检测定位与分类，并将模型构建整个成完整的AI SaaS任务进行交付。
 
 
+
 ## Action
 
-参考链接：https://github.com/fizyr/keras-retinanet
+### 1、RetinaNet
+
+Keras-RetinaNet的Github：https://github.com/fizyr/keras-retinanet
 
 对于货架商品检测模块，项目难点是图片中的商品排列紧密，正负样本不平衡的特性，因此针对性使用RetinaNet来解决。
 
-- RetinaNet
-- backbone：ResNet-50
-- 超参数：
-  - 回归loss：smooth_l1
-  - 分类loss：focal
-  - 几何增强：数据增强：旋转，平移，随机裁剪，缩放，翻转
-  - 色彩增强：对比度，亮度，hue，饱和度
-  - 优化器：Adam，lr=1e-5，0.001
-  - 学习率：1e-5，连续2 epoch下降就\*0.1
-  - Batch size：1
-  - step: 90
-  - epoch: 50
+- backbone：ResNet50
+- 回归loss：smooth_l1
+- 分类loss：focal
+- 几何数据增强：旋转，平移，随机裁剪，缩放，翻转
+- 色彩数据增强：对比度，亮度，hue，饱和度
+- 优化器：Adam，lr=1e-5，0.001
+- 学习率：1e-5，连续2 epoch下降就\*0.1
+- Batch size：1
+- step: 90
+- epoch: 50
 
+
+
+### 2、ResNet
 
 对于商品识别模块，使用ResNet50作为Backbone，对数据引入数据增强，对网络引入ImageNet预训练权重进行Finetune。
 
-- ResNet-50
-- 输出后引入全局均值池化，再接分类器
-- 只训练后面的FC层，冻结CNN权重
-- 分类：softmax
-- 超参数：
-  - Adam
-  - CE Loss
-  - batch size ：32
-  - imput size：224
-  - epoch 20
-  - steps_per_epoch=100
-  - validation_steps=10
+- ImageNet权重初始化
+- 输出接两层1024的FC + ReLU，最后接Softmax，只训练后面的FC层，冻结CNN权重
+- Adam
+- CE Loss
+- batch size ：32
+- imput size：224
+- epoch 20
+- steps_per_epoch=100
+- validation_steps=10
+- Top-5 Acc: 0.44022988505747124
 
 
-训练完成后通过OpenCV串联目标检测与分类模块可视化识别结果,**最后**使用Flask搭建支持在线识别和API调用的 AI SaaS，在本地服务器通过curl请求方式实现轻量级的图像识别的请求。成功实现Web端AI Saas生产级部署。
+
+### 3、Deployment
+
+训练完成后通过OpenCV串联目标检测与分类模块可视化识别结果，**最后**使用Flask搭建支持在线识别和API调用的 AI SaaS，在本地服务器通过curl请求方式实现轻量级的图像识别的请求。
 
 
-## curl请求
 
-- 启动服务:python manage.py
+curl请求
+
+- 启动服务: `python manage.py`
 - 在另一个窗口执行请求：
 
 `curl -H "Content-Type: application/json" --data @body.json http://localhost:9000/tf2/ai_saas`
 
 HTTP请求的头文件里面会标注出这个请求的内容的类型是json，数据是放到了body.json里面，@body.json表示这是一个本地文件的访问方式，所以body.json里面就传入了一个Image的URL
 
-因为用的是本地文件，所以你去发起请求的时候路径就至关重要，记得请求的时候需要走到有body.json文件的目录下
+因为用的是本地文件，所以发起请求的时候路径就至关重要，记得请求的时候需要走到有body.json文件的目录下
 
 
 
